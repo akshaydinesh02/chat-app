@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { decrypt } from "crypto-js/aes";
 import Utf8 from "crypto-js/enc-utf8";
+import { generateUniqueId } from "../utils/rooms.util";
 
 const decryptNumber = (cipherText: string, secretKey: string) => {
   const bytes = decrypt(cipherText, secretKey);
@@ -23,10 +24,11 @@ export const checkUserAuth = (
     });
   }
   const decryptedPin = decryptNumber(encryptedPin, secretKey);
+  const uniqueId = generateUniqueId();
   const newRoomData = {
     createdBy: name,
     pin: decryptedPin,
-    id: "test",
+    id: uniqueId,
   };
   res.locals.newRoomData = newRoomData;
   next();

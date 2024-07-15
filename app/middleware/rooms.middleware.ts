@@ -28,5 +28,6 @@ export const createNewRoom = (
   }
   const newRoomData = res.locals.newRoomData;
   addNewRoom(newRoomData);
+  res.locals.newRoomId = newRoomData.id;
   next();
 };

@@ -60,12 +60,11 @@ app.post(
   createNewRoom,
   (req: Request, res: Response) => {
     console.log("FINAL", rooms);
-    res.json({
-      status: "success",
-      data: {
-        test: "TEST",
-      },
-    });
+    const newRoomId = res.locals.newRoomId;
+    if (!newRoomId) {
+      return res.status(500);
+    }
+    res.status(200).redirect(`/${newRoomId}`);
   }
 );
 
