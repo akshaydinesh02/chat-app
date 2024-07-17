@@ -1,5 +1,19 @@
 import { Response, Request, NextFunction } from "express";
 import { addNewRoom, getRoomsLength } from "../utils/rooms.util";
+import { checkIfRoomExist } from "../helpers/rooms.helper";
+import { WebSocketServer } from "ws";
+import WebSocket from "ws";
+
+export const roomWebSocketServers: { [key: string]: WebSocketServer } = {};
+
+// Function to broadcast messages to all clients in a room
+function broadcast(wss: WebSocketServer, msg: WebSocket.Data) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(msg);
+    }
+  });
+}
 
 export const checkRoomsLength = (
   req: Request,
@@ -7,12 +21,8 @@ export const checkRoomsLength = (
   next: NextFunction
 ) => {
   const size = getRoomsLength();
-  if (size >= 2) {
-    return res.json({
-      status: "fail",
-      error: 429,
-      message: "Number of rooms full, try again later!",
-    });
+  if (size >= 10) {
+    return res.status(429).send("Number of rooms full, try again later!");
   } else {
     return next();
   }
@@ -24,10 +34,44 @@ export const createNewRoom = (
   next: NextFunction
 ) => {
   if (!res.locals.newRoomData) {
-    return res.status(500);
+    res.status(500).send("Something broke!");
+    return;
   }
   const newRoomData = res.locals.newRoomData;
   addNewRoom(newRoomData);
-  res.locals.newRoomId = newRoomData.id;
+  const newRoomId = newRoomData.id;
+  res.locals.newRoomId = newRoomId;
+
+  const roomServer = new WebSocketServer({ noServer: true });
+  roomWebSocketServers[newRoomId] = roomServer;
+
+  roomServer.on("connection", (client: WebSocket) => {
+    console.log(`Client connected to room ${newRoomId}`);
+
+    client.on("message", (msg: WebSocket.Data) => {
+      console.log(`Message in room ${newRoomId}: ${msg}`);
+      broadcast(roomServer, msg);
+    });
+
+    client.on("close", () => {
+      console.log(`Client disconnected from room ${newRoomId}`);
+    });
+  });
+
+  next();
+};
+
+export const validateRoomDetails = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const roomId = req.params.roomId;
+  console.log("RoomID", roomId);
+  const roomExists = checkIfRoomExist(roomId);
+  if (!roomExists) {
+    res.status(404).send("Room not found");
+    return;
+  }
   next();
 };

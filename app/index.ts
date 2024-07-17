@@ -1,17 +1,39 @@
-import { WebSocketServer } from "ws";
 import { createServer } from "http";
-import WebSocket from "ws";
 import { Response, Request, NextFunction } from "express";
 import express from "express";
 import cors from "cors";
-import { checkRoomsLength, createNewRoom } from "./middleware/rooms.middleware";
+import {
+  checkRoomsLength,
+  createNewRoom,
+  roomWebSocketServers,
+  validateRoomDetails,
+} from "./middleware/rooms.middleware";
 import { checkUserAuth } from "./middleware/auth.middleware";
 import { validateUserData } from "./middleware/zod.middleware";
 import { rooms } from "./helpers/rooms.helper";
+import { WebSocketServer } from "ws";
 
 const app = express();
 
 app.use(cors());
+app.use(express.json());
+
+const server = createServer(app);
+
+server.on("upgrade", (request, socket, head) => {
+  const pathname = new URL(request.url || "", `http://${request.headers.host}`)
+    .pathname;
+  const roomId = pathname.split("/")[2];
+  console.log("Pathname", pathname, roomId);
+
+  if (roomWebSocketServers[roomId]) {
+    roomWebSocketServers[roomId].handleUpgrade(request, socket, head, (ws) => {
+      roomWebSocketServers[roomId].emit("connection", ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
 
 // const server = createServer();
 // const wss = new WebSocketServer({ server });
@@ -54,20 +76,32 @@ app.use(cors());
 // });
 
 app.post(
+  "/joinRoom/:roomId",
+  validateRoomDetails,
+  (req: Request, res: Response) => {
+    res.send(200);
+  }
+);
+
+app.post(
   "/createRoom",
   checkRoomsLength,
   checkUserAuth,
   createNewRoom,
   (req: Request, res: Response) => {
-    console.log("FINAL", rooms);
+    console.log("RES", res.locals);
     const newRoomId = res.locals.newRoomId;
     if (!newRoomId) {
-      return res.status(500);
+      res.status(500).send("Error creating room");
+      return;
     }
-    res.status(200).redirect(`/${newRoomId}`);
+
+    res.status(200).json({
+      id: newRoomId,
+    });
   }
 );
 
-app.listen(3060, () => {
-  // console.log("App listening on port 3060");
+server.listen(8080, () => {
+  console.log("Server is listening on port 8080");
 });
