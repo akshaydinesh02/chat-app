@@ -40,17 +40,15 @@ server.on("upgrade", (request, socket, head) => {
 
 // REFACTORING
 
-// Get rooms count
-app.get("/api/v1/rooms", (req: Request, res: Response) => {
+const getRoomsCount = (req: Request, res: Response) => {
   const roomsCount = roomsMetaDataNew.size;
   res.status(200).json({
     status: "success",
     length: roomsCount,
   });
-});
+};
 
-// Get single room details (exists/not-exists)
-app.get("/api/v1/rooms/:id", (req: Request, res: Response) => {
+const checkIfRoomExists = (req: Request, res: Response) => {
   const { id } = req.params;
   if (!id) {
     return res.status(403).json({
@@ -69,10 +67,9 @@ app.get("/api/v1/rooms/:id", (req: Request, res: Response) => {
     status: "success",
     id,
   });
-});
+};
 
-// Create new room
-app.post("/api/v1/rooms", (req: Request, res: Response) => {
+const createRoom = (req: Request, res: Response) => {
   const newId = generateUniqueId();
   const { name } = req.body;
   const date = getCurrentDate();
@@ -88,10 +85,9 @@ app.post("/api/v1/rooms", (req: Request, res: Response) => {
       room: newRoom,
     },
   });
-});
+};
 
-// Update room data/join room
-app.patch("/api/v1/rooms/:id", (req: Request, res: Response) => {
+const updateRoom = (req: Request, res: Response) => {
   const { id } = req.params;
   const { newUser } = req.body;
   if (!id) {
@@ -122,10 +118,36 @@ app.patch("/api/v1/rooms/:id", (req: Request, res: Response) => {
       room,
     },
   });
-});
+};
 
-// Delete room
-app.delete("/api/v1/room/:id");
+const deleteRoom = (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(403).json({
+      status: "fail",
+      message: "Room ID missing! Please input the Room ID!",
+    });
+  }
+  const roomExists = roomsMetaDataNew.has(id);
+  if (!roomExists) {
+    return res.status(404).json({
+      status: "fail",
+      message: "Chat room not found!",
+    });
+  }
+
+  roomsMetaDataNew.delete(id);
+  res.status(204).json({
+    status: "success",
+    data: null,
+  });
+};
+
+app.get("/api/v1/rooms", getRoomsCount); // Get rooms count
+app.get("/api/v1/rooms/:id", checkIfRoomExists); // Get single room details (exists/not-exists)
+app.post("/api/v1/rooms", createRoom); // Create new room
+app.patch("/api/v1/rooms/:id", updateRoom); // Update room data/join room
+app.delete("/api/v1/rooms/:id", deleteRoom); // Delete room
 
 // =======
 
