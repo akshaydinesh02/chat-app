@@ -1,10 +1,11 @@
 import { Response, Request, NextFunction } from "express";
 import { addNewRoom, getRoomsLength } from "../utils/rooms.util";
-import { checkIfRoomExist } from "../helpers/rooms.helper";
+import {
+  checkIfRoomExist,
+  roomWebSocketServers,
+} from "../helpers/rooms.helper";
 import { WebSocketServer } from "ws";
 import WebSocket from "ws";
-
-export const roomWebSocketServers: { [key: string]: WebSocketServer } = {};
 
 // Function to broadcast messages to all clients in a room
 function broadcast(wss: WebSocketServer, msg: WebSocket.Data) {

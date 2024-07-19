@@ -5,13 +5,17 @@ import cors from "cors";
 import {
   checkRoomsLength,
   createNewRoom,
-  roomWebSocketServers,
   validateRoomDetails,
 } from "./middleware/rooms.middleware";
 import { checkUserAuth } from "./middleware/auth.middleware";
 import { validateUserData } from "./middleware/zod.middleware";
-import { rooms } from "./helpers/rooms.helper";
+import {
+  roomsMetaData,
+  roomsMetaDataNew,
+  roomWebSocketServers,
+} from "./helpers/rooms.helper";
 import { WebSocketServer } from "ws";
+import { generateUniqueId, getCurrentDate } from "./utils/rooms.util";
 
 const app = express();
 
@@ -24,7 +28,6 @@ server.on("upgrade", (request, socket, head) => {
   const pathname = new URL(request.url || "", `http://${request.headers.host}`)
     .pathname;
   const roomId = pathname.split("/")[2];
-  console.log("Pathname", pathname, roomId);
 
   if (roomWebSocketServers[roomId]) {
     roomWebSocketServers[roomId].handleUpgrade(request, socket, head, (ws) => {
@@ -35,45 +38,98 @@ server.on("upgrade", (request, socket, head) => {
   }
 });
 
-// const server = createServer();
-// const wss = new WebSocketServer({ server });
-// // const messages =
+// REFACTORING
 
-// const MAX_CONNECTIONS = 2;
-// let currentConnections = 0;
+// Get rooms count
+app.get("/api/v1/rooms", (req: Request, res: Response) => {
+  const roomsCount = roomsMetaDataNew.size;
+  res.status(200).json({
+    status: "success",
+    length: roomsCount,
+  });
+});
 
-// wss.on("connection", (client: WebSocket) => {
-//   if (currentConnections >= MAX_CONNECTIONS) {
-//     client.send(JSON.stringify({ error: "Server is full. Try again later." }));
-//     client.close();
-//     return;
-//   }
+// Get single room details (exists/not-exists)
+app.get("/api/v1/rooms/:id", (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(403).json({
+      status: "fail",
+      message: "Room ID missing! Please input the Room ID!",
+    });
+  }
+  const roomExists = roomsMetaDataNew.has(id);
+  if (!roomExists) {
+    return res.status(404).json({
+      status: "fail",
+      message: "Chat room not found!",
+    });
+  }
+  res.status(200).json({
+    status: "success",
+    id,
+  });
+});
 
-//   currentConnections++;
-//   console.log("Client connected");
+// Create new room
+app.post("/api/v1/rooms", (req: Request, res: Response) => {
+  const newId = generateUniqueId();
+  const { name } = req.body;
+  const date = getCurrentDate();
+  const newRoom = {
+    id: newId,
+    createdAt: date,
+    users: new Map([["12345", { name: "Akshay", id: "12345" }]]),
+  };
+  roomsMetaDataNew.set(newId, newRoom);
+  res.status(201).json({
+    status: "success",
+    data: {
+      room: newRoom,
+    },
+  });
+});
 
-//   client.on("message", (msg: WebSocket.Data) => {
-//     console.log(`Message: ${msg}`);
-//     broadcast(msg);
-//   });
+// Update room data/join room
+app.patch("/api/v1/rooms/:id", (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { newUser } = req.body;
+  if (!id) {
+    return res.status(403).json({
+      status: "fail",
+      message: "Room ID missing! Please input the Room ID!",
+    });
+  }
+  const roomExists = roomsMetaDataNew.has(id);
+  if (!roomExists) {
+    return res.status(404).json({
+      status: "fail",
+      message: "Chat room not found!",
+    });
+  }
 
-//   client.on("close", () => {
-//     currentConnections--;
-//     console.log("Client disconnected!");
-//   });
-// });
+  const room = roomsMetaDataNew.get(id);
 
-// function broadcast(msg: WebSocket.Data) {
-//   wss.clients.forEach((client) => {
-//     if (client.readyState === WebSocket.OPEN) {
-//       client.send(msg);
-//     }
-//   });
-// }
+  if (room) {
+    room.users.set(newUser.id, newUser);
 
-// server.listen(8080, () => {
-//   console.log("Server is listening on port 8080");
-// });
+    roomsMetaDataNew.set(id, room);
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      room,
+    },
+  });
+});
+
+// Delete room
+app.delete("/api/v1/room/:id");
+
+// =======
+
+app.get("/chatRoomValidity");
 
 app.post(
   "/joinRoom/:roomId",
@@ -91,6 +147,7 @@ app.post(
   (req: Request, res: Response) => {
     console.log("RES", res.locals);
     const newRoomId = res.locals.newRoomId;
+    console.log("Rooms", roomWebSocketServers);
     if (!newRoomId) {
       res.status(500).send("Error creating room");
       return;

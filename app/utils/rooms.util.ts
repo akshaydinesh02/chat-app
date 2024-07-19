@@ -1,4 +1,4 @@
-import { rooms } from "../helpers/rooms.helper";
+import { roomsMetaData } from "../helpers/rooms.helper";
 import { v4 as uuidv4 } from "uuid";
 
 interface INewRoomData {
@@ -8,12 +8,12 @@ interface INewRoomData {
 }
 
 export const getRoomsLength = () => {
-  return rooms.size;
+  return roomsMetaData.size;
 };
 
 export const addNewRoom = (roomData: INewRoomData) => {
   const { id, createdBy, pin } = roomData;
-  rooms.set(id, pin);
+  roomsMetaData.set(id, pin);
 };
 
 export const generateUniqueId = () => {
@@ -27,4 +27,12 @@ export const generateUniqueId = () => {
   )}-${parts[2].substring(0, 3)}`;
 
   return customId;
+};
+
+export const getCurrentDate = () => {
+  const current = new Date(Date.now());
+  const day = current.getDay();
+  const month = current.getMonth();
+  const year = current.getFullYear();
+  return `${day}-${month}-${year}`;
 };
