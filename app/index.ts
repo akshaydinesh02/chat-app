@@ -16,10 +16,12 @@ import {
 } from "./helpers/rooms.helper";
 import { WebSocketServer } from "ws";
 import { generateUniqueId, getCurrentDate } from "./utils/rooms.util";
+import morgan from "morgan";
 
 const app = express();
 
 app.use(cors());
+app.use(morgan("dev"));
 app.use(express.json());
 
 const server = createServer(app);
@@ -48,7 +50,7 @@ const getRoomsCount = (req: Request, res: Response) => {
   });
 };
 
-const checkIfRoomExists = (req: Request, res: Response) => {
+const getRoom = (req: Request, res: Response) => {
   const { id } = req.params;
   if (!id) {
     return res.status(403).json({
@@ -143,11 +145,14 @@ const deleteRoom = (req: Request, res: Response) => {
   });
 };
 
-app.get("/api/v1/rooms", getRoomsCount); // Get rooms count
-app.get("/api/v1/rooms/:id", checkIfRoomExists); // Get single room details (exists/not-exists)
-app.post("/api/v1/rooms", createRoom); // Create new room
-app.patch("/api/v1/rooms/:id", updateRoom); // Update room data/join room
-app.delete("/api/v1/rooms/:id", deleteRoom); // Delete room
+const router = express.Router();
+
+app.route("/api/v1/rooms").get(getRoomsCount).post(createRoom);
+app
+  .route("/api/v1/rooms/:id")
+  .get(getRoom)
+  .patch(updateRoom)
+  .delete(deleteRoom);
 
 // =======
 
