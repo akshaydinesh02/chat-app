@@ -6,7 +6,6 @@ import {
   createNewRoom,
   validateRoomDetails,
 } from "./middleware/rooms.middleware";
-import { checkUserAuth } from "./middleware/auth.middleware";
 import { roomWebSocketServers } from "./helpers/rooms.helper";
 
 import morgan from "morgan";

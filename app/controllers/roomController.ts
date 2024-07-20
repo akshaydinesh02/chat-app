@@ -29,18 +29,25 @@ const getRoom = catchAsync(
 const createRoom = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const newId = generateUniqueId();
-    const { name } = req.body;
     const date = new Date().toISOString();
+    const user = res.locals.user;
+    const {
+      id,
+      user_metadata: { email, name },
+    } = user;
     const newRoom = {
       id: newId,
       createdAt: date,
-      users: new Map([["12345", { name: "Akshay", id: "12345" }]]),
+      users: new Map([[id, { name, id, email }]]),
     };
     roomsMetaDataNew.set(newId, newRoom);
     res.status(201).json({
       status: "success",
       data: {
-        room: newRoom,
+        room: {
+          id: newRoom.id,
+          createdAt: newRoom.createdAt,
+        },
       },
     });
   }

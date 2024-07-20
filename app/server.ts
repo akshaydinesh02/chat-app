@@ -1,6 +1,10 @@
 import { createServer } from "http";
 import { roomWebSocketServers } from "./helpers/rooms.helper";
 import app from ".";
+import { config } from "dotenv";
+import { createClient } from "@supabase/supabase-js";
+
+config();
 
 process.on("uncaughtException", (err: any) => {
   console.log("Unhandled exception! Shutting down...");
@@ -11,6 +15,11 @@ process.on("uncaughtException", (err: any) => {
 });
 
 const server = createServer(app);
+
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_KEY!
+);
 
 server.on("upgrade", (request, socket, head) => {
   const pathname = new URL(request.url || "", `http://${request.headers.host}`)

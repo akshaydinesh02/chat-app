@@ -8,13 +8,18 @@ import {
   updateRoom,
   getRoomsCount,
 } from "../controllers/roomController";
+import { authenticateUser } from "../utils/authenticateUser";
+import { checkRoomsLength } from "../utils/checkRoomsLength";
 
 const router = express.Router();
 
 router.param("id", checkID);
 router.param("id", validateRoom);
 
-router.route("/").get(getRoomsCount).post(createRoom);
+router
+  .route("/")
+  .get(getRoomsCount)
+  .post(checkRoomsLength, authenticateUser, createRoom);
 router.route("/:id").get(getRoom).patch(updateRoom).delete(deleteRoom);
 
 export default router;

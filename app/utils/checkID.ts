@@ -9,7 +9,7 @@ export const checkID = (
 ) => {
   const id = req.params.id.trim();
   if (!id.length) {
-    next(new AppError("Chat room ID missing!", 403));
+    return next(new AppError("Chat room ID missing!", 403));
   }
   next();
 };
