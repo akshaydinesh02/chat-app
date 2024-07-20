@@ -1,4 +1,4 @@
-import { Response, Request, NextFunction } from "express";
+import { Response, Request, NextFunction, ErrorRequestHandler } from "express";
 import express from "express";
 import cors from "cors";
 import {
@@ -11,6 +11,8 @@ import { roomWebSocketServers } from "./helpers/rooms.helper";
 
 import morgan from "morgan";
 import { default as roomRouter } from "./routes/roomRoutes";
+import AppError from "./utils/appError";
+import globalErrorHandler from "./controllers/errorController";
 
 const app = express();
 
@@ -54,10 +56,9 @@ app.use("/api/v1/rooms", roomRouter);
 // );
 
 app.all("*", (req: Request, res: Response, next: NextFunction) => {
-  res.status(404).json({
-    status: "fail",
-    message: `Can't find ${req.originalUrl} on this server!`,
-  });
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
+
+app.use(globalErrorHandler);
 
 export default app;

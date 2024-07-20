@@ -1,12 +1,12 @@
 import express from "express";
+import { checkID } from "../utils/checkID";
+import { validateRoom } from "../utils/validateRoom";
 import {
   createRoom,
   deleteRoom,
   getRoom,
   updateRoom,
   getRoomsCount,
-  checkID,
-  validateRoom,
 } from "../controllers/roomController";
 
 const router = express.Router();
