@@ -8,12 +8,9 @@ export const authenticateUser = async (
   next: NextFunction
 ) => {
   const token = req.headers.authorization?.split(" ")[1];
-  const pin = req.headers.pin;
+
   if (!token) {
     return next(new AppError("Unauthorized! No token provided", 401));
-  }
-  if (!pin) {
-    return next(new AppError("Unauthorized! No PIN provided", 401));
   }
 
   const {

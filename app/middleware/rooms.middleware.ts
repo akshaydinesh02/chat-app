@@ -68,7 +68,6 @@ export const validateRoomDetails = (
   next: NextFunction
 ) => {
   const roomId = req.params.roomId;
-  console.log("RoomID", roomId);
   const roomExists = checkIfRoomExist(roomId);
   if (!roomExists) {
     res.status(404).send("Room not found");
