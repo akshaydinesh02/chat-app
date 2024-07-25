@@ -25,11 +25,8 @@ server.on("upgrade", (request, socket, head) => {
   const pathname = new URL(request.url || "", `http://${request.headers.host}`)
     .pathname;
   const roomId = pathname.split("/")[2];
-  console.log("data", pathname, roomId);
 
-  console.log("socket server", roomWebSocketServers);
   if (roomWebSocketServers[roomId]) {
-    console.log("Room exists");
     roomWebSocketServers[roomId].handleUpgrade(request, socket, head, (ws) => {
       roomWebSocketServers[roomId].emit("connection", ws, request);
     });

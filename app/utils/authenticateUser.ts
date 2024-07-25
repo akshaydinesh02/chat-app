@@ -23,5 +23,6 @@ export const authenticateUser = async (
   }
 
   res.locals.user = user;
+  console.log("User after setting", user?.id);
   next();
 };

@@ -1,16 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import {
-  broadcast,
-  decryptNumber,
+  createWebSocketServer,
   roomsMetaDataNew,
-  roomWebSocketServers,
 } from "../helpers/rooms.helper";
-import { generateUniqueId, getCurrentDate } from "../utils/rooms.util";
 import { catchAsync } from "../utils/catchAsync";
 import AppError from "../utils/appError";
-import { WebSocketServer } from "ws";
-import WebSocket from "ws";
-import { users } from "../helpers/users.helper";
+import { generateRoomId } from "../utils/generateRoomId";
 
 const getRoomsCount = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -26,6 +21,12 @@ const getRoom = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const room = roomsMetaDataNew.get(id);
+    const user = res.locals.user;
+
+    if (!room?.allowedUsers.has(user.email)) {
+      new AppError("Unauthorized! You do not have access to this room", 401);
+    }
+
     res.status(200).json({
       status: "success",
       data: {
@@ -37,7 +38,7 @@ const getRoom = catchAsync(
 
 const createRoom = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const newId = generateUniqueId();
+    const newId = generateRoomId();
     const date = new Date().toISOString();
     const user = res.locals.user;
 
@@ -53,31 +54,15 @@ const createRoom = catchAsync(
     const newRoom = {
       id: newId,
       createdAt: date,
-      users: new Map([[id, { name, id, email }]]),
+      onlineUsers: new Map([[id, { name, id, email }]]),
       allowedUsers: new Map([
         [invitee, "invitee"],
-        [user.email, "inviter"],
+        [email, "inviter"],
       ]),
     };
     roomsMetaDataNew.set(newId, newRoom);
 
-    const roomServer = new WebSocketServer({ noServer: true });
-    roomWebSocketServers[newId] = roomServer;
-
-    roomServer.on("connection", (client: WebSocket) => {
-      console.log(`Client connected to room ${newId}`);
-
-      client.on("message", (msg: WebSocket.Data) => {
-        console.log(`Message in room ${newId}: ${msg}`);
-        broadcast(roomServer, msg);
-      });
-
-      client.on("close", () => {
-        console.log(`Client disconnected from room ${newId}`);
-      });
-    });
-
-    console.log("Rooms metadata", roomsMetaDataNew);
+    createWebSocketServer(newId);
 
     res.status(201).json({
       status: "success",
@@ -107,12 +92,14 @@ const updateRoom = catchAsync(
           new AppError("Unauthorized! You do not have access to this room", 401)
         );
       }
-      room.users.set(user.id, { id: user.id, name: user.user_metadata.name });
+      room.onlineUsers.set(user.id, {
+        id: user.id,
+        name: user.user_metadata.name,
+        email: user.email,
+      });
 
       roomsMetaDataNew.set(id, room);
     }
-
-    console.log("New room data", roomsMetaDataNew);
 
     res.status(200).json({
       status: "success",
