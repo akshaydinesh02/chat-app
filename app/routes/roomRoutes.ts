@@ -7,6 +7,7 @@ import {
   getRoom,
   updateRoom,
   getRoomsCount,
+  // getRoomMetaData,
 } from "../controllers/roomController";
 import { authenticateUser } from "../utils/authenticateUser";
 import { checkRoomsLength } from "../utils/checkRoomsLength";
@@ -19,5 +20,6 @@ router.param("id", validateRoom);
 
 router.route("/").get(getRoomsCount).post(checkRoomsLength, createRoom);
 router.route("/:id").get(getRoom).patch(updateRoom).delete(deleteRoom);
+// router.route("/metadata").get(getRoomMetaData);
 
 export default router;

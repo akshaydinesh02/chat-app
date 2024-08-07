@@ -1,5 +1,8 @@
 import { createServer } from "http";
-import { roomWebSocketServers } from "./helpers/rooms.helper";
+import {
+  roomWebSocketServers,
+  roomMetaDataServer,
+} from "./helpers/rooms.helper";
 import app from ".";
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
@@ -26,9 +29,13 @@ server.on("upgrade", (request, socket, head) => {
     .pathname;
   const roomId = pathname.split("/")[2];
 
-  if (roomWebSocketServers[roomId]) {
+  if (!pathname.includes("metadata") && roomWebSocketServers[roomId]) {
     roomWebSocketServers[roomId].handleUpgrade(request, socket, head, (ws) => {
       roomWebSocketServers[roomId].emit("connection", ws, request);
+    });
+  } else if (pathname.includes("metadata")) {
+    roomMetaDataServer?.handleUpgrade(request, socket, head, (ws) => {
+      roomMetaDataServer?.emit("connection", ws, request);
     });
   } else {
     socket.destroy();
@@ -36,7 +43,7 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 server.listen(8080, () => {
-  console.log("Server is listening on port 8080");
+  console.log("Room Server is listening on port 8080");
 });
 
 process.on("unhandledRejection", (err: any) => {

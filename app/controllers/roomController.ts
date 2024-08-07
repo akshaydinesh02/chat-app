@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import {
-  createWebSocketServer,
+  createRoomServer,
+  roomMetaDataServer,
   roomsMetaDataNew,
 } from "../helpers/rooms.helper";
 import { catchAsync } from "../utils/catchAsync";
@@ -62,7 +63,11 @@ const createRoom = catchAsync(
     };
     roomsMetaDataNew.set(newId, newRoom);
 
-    createWebSocketServer(newId);
+    createRoomServer(newId);
+
+    roomMetaDataServer?.clients.forEach((client) => {
+      client.send(roomsMetaDataNew.size.toString());
+    });
 
     res.status(201).json({
       status: "success",
@@ -116,6 +121,10 @@ const deleteRoom = catchAsync(
     const room = roomsMetaDataNew.get(id);
     const user = res.locals.user;
 
+    roomMetaDataServer?.clients.forEach((client) => {
+      client.send(roomsMetaDataNew.size.toString());
+    });
+
     roomsMetaDataNew.delete(id);
     res.status(204).json({
       status: "success",
@@ -124,4 +133,20 @@ const deleteRoom = catchAsync(
   }
 );
 
-export { getRoomsCount, getRoom, createRoom, updateRoom, deleteRoom };
+// const getRoomMetaData = catchAsync(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     res.status(200).json({
+//       status: "success",
+//       length: roomsMetaDataNew.size,
+//     });
+//   }
+// );
+
+export {
+  getRoomsCount,
+  getRoom,
+  createRoom,
+  updateRoom,
+  deleteRoom,
+  // getRoomMetaData,
+};

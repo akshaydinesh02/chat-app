@@ -45,7 +45,7 @@ export const addOnlineUser = (user: any, roomId: string) => {
   });
 };
 
-export const createWebSocketServer = (newRoomId: string) => {
+export const createRoomServer = (newRoomId: string) => {
   const roomServer = new WebSocketServer({ noServer: true });
   roomWebSocketServers[newRoomId] = roomServer;
 
@@ -70,3 +70,18 @@ export const createWebSocketServer = (newRoomId: string) => {
     });
   });
 };
+
+export const createMetadataServer = () => {
+  const server = new WebSocketServer({
+    noServer: true,
+  });
+
+  server.on("connection", (client: WebSocket, req: IncomingMessage) => {
+    console.log("New client connected");
+    client.send(roomsMetaDataNew.size.toString());
+    // broadcast(server, "test");
+  });
+
+  return server;
+};
+export const roomMetaDataServer: WebSocketServer = createMetadataServer();
